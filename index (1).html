@@ -1,0 +1,13 @@
+<!doctype html><html lang="bn"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Alamin AI</title>
+<style>
+body{margin:0;font-family:Arial,sans-serif;background:#f5f7fb;color:#18202f}header{padding:18px 6%;background:white;border-bottom:1px solid #ddd;display:flex;justify-content:space-between}.logo{font-size:25px;font-weight:bold;color:#5146e5}.hero{text-align:center;padding:60px 15px 30px}.hero h1{font-size:44px}.wrap{max-width:850px;margin:auto;padding:20px}.card{background:white;padding:22px;border-radius:18px;box-shadow:0 8px 25px #0001}.chat{height:330px;overflow:auto;border:1px solid #ddd;padding:12px;border-radius:14px}.msg{padding:12px;margin:8px 0;border-radius:12px;white-space:pre-wrap}.ai{background:#eef0ff}.user{background:#5146e5;color:white;margin-left:20%}form{display:flex;gap:10px;margin-top:12px}input{flex:1;padding:14px;border:1px solid #ccc;border-radius:10px;font-size:16px}button{background:#5146e5;color:white;border:0;border-radius:10px;padding:0 20px;font-weight:bold}.tools{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;margin-top:20px}.tool{background:white;padding:18px;border-radius:14px}@media(max-width:600px){.hero h1{font-size:34px}form{flex-direction:column}button{height:48px}.user{margin-left:5%}}
+</style></head><body>
+<header><div class="logo">🤖 Alamin AI</div><div>Your AI, Your Way</div></header>
+<section class="hero"><h1>Alamin AI</h1><p>আপনার নিজের AI Assistant</p></section>
+<main class="wrap"><div class="card"><h2>💬 AI Chat</h2><div id="chat" class="chat"><div class="msg ai">আসসালামু আলাইকুম! আমি Alamin AI। আপনার প্রশ্ন লিখুন।</div></div><form id="form"><input id="q" placeholder="আপনার প্রশ্ন লিখুন..."><button>Send</button></form></div>
+<div class="tools"><div class="tool">✍️ <b>AI Writer</b><br>লেখা তৈরি</div><div class="tool">📄 <b>CV Maker</b><br>CV তৈরি</div><div class="tool">🌐 <b>Translator</b><br>অনুবাদ</div><div class="tool">📑 <b>PDF AI</b><br>PDF সহায়তা</div></div></main>
+<script>
+const f=document.getElementById('form'),q=document.getElementById('q'),c=document.getElementById('chat');
+function add(t,k){let d=document.createElement('div');d.className='msg '+k;d.textContent=t;c.appendChild(d);c.scrollTop=c.scrollHeight}
+f.onsubmit=e=>{e.preventDefault();let x=q.value.trim();if(!x)return;q.value='';add(x,'user');setTimeout(()=>add(/^(hi|hello|হাই)/i.test(x)?'হ্যালো! 👋 আমি Alamin AI। কীভাবে সাহায্য করতে পারি?':'আপনার বার্তাটি পেয়েছি। আসল AI উত্তর চালু করতে পরে API সংযোগ করতে হবে। ওয়েবসাইটের interface এখন প্রস্তুত।','ai'),400)}
+</script></body></html>
