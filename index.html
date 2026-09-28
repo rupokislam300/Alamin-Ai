@@ -1,65 +1,810 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="bn">
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0,user-scalable=no">
+<title>Alamin: Human Forest</title>
 
-<title>Alamin: Sky Forest</title>
+<style>
+*{
+  box-sizing:border-box;
+  margin:0;
+  padding:0;
+  user-select:none;
+  -webkit-user-select:none;
+}
 
-<link rel="stylesheet" href="style.css">
+html,body{
+  width:100%;
+  height:100%;
+  overflow:hidden;
+  background:#071c22;
+  font-family:Arial,sans-serif;
+}
+
+#game{
+  display:block;
+  width:100vw;
+  height:100vh;
+  touch-action:none;
+}
+
+#hud{
+  position:fixed;
+  top:0;
+  left:0;
+  width:100%;
+  padding:12px 14px;
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  color:white;
+  background:rgba(0,0,0,.35);
+  z-index:5;
+  font-size:18px;
+  font-weight:bold;
+}
+
+.title{
+  color:#fff;
+}
+
+.stats{
+  display:flex;
+  gap:14px;
+}
+
+#message{
+  position:fixed;
+  top:62px;
+  left:50%;
+  transform:translateX(-50%);
+  color:white;
+  background:rgba(0,0,0,.65);
+  padding:10px 18px;
+  border-radius:20px;
+  z-index:5;
+  text-align:center;
+  font-size:15px;
+  white-space:nowrap;
+}
+
+#controls{
+  position:fixed;
+  bottom:20px;
+  left:50%;
+  transform:translateX(-50%);
+  width:230px;
+  height:190px;
+  z-index:10;
+}
+
+.btn{
+  position:absolute;
+  width:70px;
+  height:70px;
+  border:1px solid rgba(255,255,255,.3);
+  border-radius:20px;
+  background:rgba(10,40,45,.75);
+  color:white;
+  font-size:28px;
+  display:flex;
+  justify-content:center;
+  align-items:center;
+  touch-action:none;
+}
+
+.btn:active{
+  background:rgba(30,150,170,.9);
+}
+
+.up{left:80px;top:0}
+.left{left:0;top:75px}
+.down{left:80px;top:75px}
+.right{left:160px;top:75px}
+
+#energyBtn{
+  position:fixed;
+  bottom:48px;
+  right:18px;
+  width:64px;
+  height:64px;
+  border-radius:50%;
+  border:2px solid rgba(255,255,255,.4);
+  background:#0d7789;
+  color:white;
+  font-size:28px;
+  z-index:10;
+}
+
+#gameOver{
+  display:none;
+  position:fixed;
+  inset:0;
+  background:rgba(0,0,0,.8);
+  z-index:20;
+  color:white;
+  justify-content:center;
+  align-items:center;
+  text-align:center;
+  flex-direction:column;
+  gap:18px;
+}
+
+#gameOver h1{
+  font-size:42px;
+}
+
+#restart{
+  padding:14px 28px;
+  border:0;
+  border-radius:14px;
+  font-size:18px;
+  font-weight:bold;
+}
+
+@media(min-width:800px){
+  #controls{
+    opacity:.75;
+  }
+}
+</style>
 </head>
 
 <body>
 
-<div id="hud">
-  <b>🌿 ALAMIN: SKY FOREST</b>
-
-  <span>
-    ❤️ <i id="hp">100</i>
-    ⚡ <i id="energy">100</i>
-    ⭐ <i id="score">0</i>
-  </span>
-</div>
-
 <canvas id="game"></canvas>
 
-<div id="mission">
-  ৫টি Crystal সংগ্রহ করে নীল Portal-এ পৌঁছাও
+<div id="hud">
+  <div class="title">🌿 ALAMIN: HUMAN FOREST</div>
+  <div class="stats">
+    <span>❤️ <b id="hp">100</b></span>
+    <span>⚡ <b id="energy">100</b></span>
+    <span>⭐ <b id="score">0</b></span>
+  </div>
 </div>
+
+<div id="message">💎 Crystal সংগ্রহ করে Portal-এ পৌঁছাও</div>
 
 <div id="controls">
-
-  <button data-k="ArrowUp">▲</button>
-
-  <div>
-    <button data-k="ArrowLeft">◀</button>
-    <button id="power">⚡</button>
-    <button data-k="ArrowRight">▶</button>
-  </div>
-
-  <button data-k="ArrowDown">▼</button>
-
+  <div class="btn up" data-key="up">▲</div>
+  <div class="btn left" data-key="left">◀</div>
+  <div class="btn down" data-key="down">▼</div>
+  <div class="btn right" data-key="right">▶</div>
 </div>
 
-<div id="menu">
+<button id="energyBtn">⚡</button>
 
-  <div class="card">
-
-    <h1>🌿 ALAMIN: SKY FOREST</h1>
-
-    <p id="msg">
-      একটি Fantasy Adventure Demo
-    </p>
-
-    <button id="start">
-      START GAME
-    </button>
-
-  </div>
-
+<div id="gameOver">
+  <h1>GAME OVER</h1>
+  <p>তোমার যাত্রা শেষ হয়েছে।</p>
+  <button id="restart">আবার খেলুন</button>
 </div>
 
-<script src="game.js"></script>
+<script>
+const canvas = document.getElementById("game");
+const ctx = canvas.getContext("2d");
+
+let W,H;
+function resize(){
+  W=canvas.width=window.innerWidth;
+  H=canvas.height=window.innerHeight;
+}
+resize();
+window.addEventListener("resize",resize);
+
+const keys={
+  up:false,
+  down:false,
+  left:false,
+  right:false
+};
+
+const world={
+  width:2600,
+  height:2600
+};
+
+const camera={
+  x:0,
+  y:0
+};
+
+let score=0;
+let crystals=0;
+let gameRunning=true;
+
+const player={
+  x:1300,
+  y:1300,
+  speed:3.2,
+  sprint:5.5,
+  hp:100,
+  energy:100,
+  radius:18,
+  direction:"down"
+};
+
+const crystalsList=[];
+const people=[];
+const enemies=[];
+
+function random(min,max){
+  return Math.random()*(max-min)+min;
+}
+
+function distance(a,b){
+  return Math.hypot(a.x-b.x,a.y-b.y);
+}
+
+/* ---------- PEOPLE ---------- */
+
+const clothes=[
+  "#2474ff",
+  "#e33c59",
+  "#e69b20",
+  "#7b4ce0",
+  "#19a974",
+  "#e86ad0"
+];
+
+for(let i=0;i<12;i++){
+  people.push({
+    x:random(150,2450),
+    y:random(180,2450),
+    color:clothes[i%clothes.length],
+    name:"মানুষ "+(i+1),
+    dx:random(-1,1),
+    dy:random(-1,1),
+    timer:random(40,160)
+  });
+}
+
+/* ---------- ENEMIES ---------- */
+
+for(let i=0;i<8;i++){
+  enemies.push({
+    x:random(300,2300),
+    y:random(400,2300),
+    speed:1.15,
+    hp:30,
+    attack:0
+  });
+}
+
+/* ---------- CRYSTALS ---------- */
+
+for(let i=0;i<15;i++){
+  crystalsList.push({
+    x:random(150,2450),
+    y:random(180,2450),
+    taken:false
+  });
+}
+
+/* ---------- PORTAL ---------- */
+
+const portal={
+  x:2250,
+  y:350,
+  r:48
+};
+
+/* ---------- TREES ---------- */
+
+const trees=[];
+
+for(let i=0;i<100;i++){
+  trees.push({
+    x:random(30,2570),
+    y:random(120,2570),
+    r:random(25,55)
+  });
+}
+
+/* ---------- DRAW HUMAN ---------- */
+
+function drawHuman(x,y,color,scale=1,enemy=false){
+
+  ctx.save();
+  ctx.translate(x,y);
+  ctx.scale(scale,scale);
+
+  /* shadow */
+  ctx.beginPath();
+  ctx.ellipse(0,22,15,7,0,0,Math.PI*2);
+  ctx.fillStyle="rgba(0,0,0,.3)";
+  ctx.fill();
+
+  /* legs */
+  ctx.fillStyle="#202a35";
+
+  ctx.fillRect(-10,10,7,19);
+  ctx.fillRect(3,10,7,19);
+
+  /* shoes */
+  ctx.fillStyle="#111";
+  ctx.fillRect(-12,26,10,5);
+  ctx.fillRect(2,26,10,5);
+
+  /* body */
+  ctx.fillStyle=enemy ? "#8d2020" : color;
+
+  ctx.beginPath();
+  ctx.roundRect(-15,-8,30,27,7);
+  ctx.fill();
+
+  /* arms */
+  ctx.strokeStyle=enemy ? "#e04a4a" : "#e5a078";
+  ctx.lineWidth=7;
+  ctx.lineCap="round";
+
+  ctx.beginPath();
+  ctx.moveTo(-14,-3);
+  ctx.lineTo(-23,10);
+  ctx.stroke();
+
+  ctx.beginPath();
+  ctx.moveTo(14,-3);
+  ctx.lineTo(23,10);
+  ctx.stroke();
+
+  /* neck */
+  ctx.fillStyle="#d99a73";
+  ctx.fillRect(-5,-15,10,9);
+
+  /* head */
+  ctx.beginPath();
+  ctx.arc(0,-24,14,0,Math.PI*2);
+  ctx.fillStyle="#e2a37d";
+  ctx.fill();
+
+  /* hair */
+  ctx.beginPath();
+  ctx.arc(0,-29,14,Math.PI,Math.PI*2);
+  ctx.fillStyle=enemy ? "#190f0f" : "#241c18";
+  ctx.fill();
+
+  /* eyes */
+  ctx.fillStyle="#111";
+  ctx.beginPath();
+  ctx.arc(-5,-24,1.8,0,Math.PI*2);
+  ctx.arc(5,-24,1.8,0,Math.PI*2);
+  ctx.fill();
+
+  ctx.restore();
+}
+
+/* ---------- DRAW WORLD ---------- */
+
+function drawBackground(){
+
+  ctx.fillStyle="#083c43";
+  ctx.fillRect(0,0,W,H);
+
+  /* grass areas */
+  ctx.fillStyle="#0b5550";
+
+  for(let x=-camera.x%180;x<W;x+=180){
+    for(let y=-camera.y%180;y<H;y+=180){
+      ctx.beginPath();
+      ctx.arc(x+40,y+40,90,0,Math.PI*2);
+      ctx.fill();
+    }
+  }
+
+  /* path */
+  ctx.fillStyle="#315d55";
+
+  ctx.beginPath();
+  ctx.moveTo(-camera.x+1050,-camera.y);
+  ctx.lineTo(-camera.x+1550,-camera.y);
+  ctx.lineTo(-camera.x+1500,H-camera.y);
+  ctx.lineTo(-camera.x+1000,H-camera.y);
+  ctx.closePath();
+  ctx.fill();
+
+  /* trees */
+  for(const t of trees){
+
+    const x=t.x-camera.x;
+    const y=t.y-camera.y;
+
+    if(x<-100 || x>W+100 || y<-100 || y>H+100)
+      continue;
+
+    ctx.fillStyle="#513927";
+    ctx.fillRect(x-7,y+15,14,30);
+
+    ctx.fillStyle="#145b3f";
+    ctx.beginPath();
+    ctx.arc(x,y,t.r,0,Math.PI*2);
+    ctx.fill();
+
+    ctx.fillStyle="#1c714b";
+    ctx.beginPath();
+    ctx.arc(x-12,y-15,t.r*.7,0,Math.PI*2);
+    ctx.fill();
+  }
+}
+
+/* ---------- DRAW CRYSTAL ---------- */
+
+function drawCrystal(c){
+
+  const x=c.x-camera.x;
+  const y=c.y-camera.y;
+
+  ctx.save();
+  ctx.translate(x,y);
+
+  ctx.shadowBlur=18;
+  ctx.shadowColor="#58eaff";
+
+  ctx.fillStyle="#55e9ff";
+
+  ctx.beginPath();
+  ctx.moveTo(0,-20);
+  ctx.lineTo(15,0);
+  ctx.lineTo(0,20);
+  ctx.lineTo(-15,0);
+  ctx.closePath();
+  ctx.fill();
+
+  ctx.restore();
+}
+
+/* ---------- DRAW PORTAL ---------- */
+
+function drawPortal(){
+
+  const x=portal.x-camera.x;
+  const y=portal.y-camera.y;
+
+  ctx.save();
+  ctx.translate(x,y);
+
+  ctx.shadowBlur=30;
+  ctx.shadowColor="#00eaff";
+
+  ctx.strokeStyle="#54eaff";
+  ctx.lineWidth=12;
+
+  ctx.beginPath();
+  ctx.arc(0,0,portal.r,0,Math.PI*2);
+  ctx.stroke();
+
+  ctx.strokeStyle="#b8ffff";
+  ctx.lineWidth=3;
+
+  ctx.beginPath();
+  ctx.arc(0,0,portal.r-12,0,Math.PI*2);
+  ctx.stroke();
+
+  ctx.restore();
+}
+
+/* ---------- INPUT ---------- */
+
+window.addEventListener("keydown",e=>{
+  if(e.key==="ArrowUp" || e.key==="w") keys.up=true;
+  if(e.key==="ArrowDown" || e.key==="s") keys.down=true;
+  if(e.key==="ArrowLeft" || e.key==="a") keys.left=true;
+  if(e.key==="ArrowRight" || e.key==="d") keys.right=true;
+});
+
+window.addEventListener("keyup",e=>{
+  if(e.key==="ArrowUp" || e.key==="w") keys.up=false;
+  if(e.key==="ArrowDown" || e.key==="s") keys.down=false;
+  if(e.key==="ArrowLeft" || e.key==="a") keys.left=false;
+  if(e.key==="ArrowRight" || e.key==="d") keys.right=false;
+});
+
+document.querySelectorAll(".btn").forEach(btn=>{
+
+  const key=btn.dataset.key;
+
+  const start=e=>{
+    e.preventDefault();
+    keys[key]=true;
+  };
+
+  const end=e=>{
+    e.preventDefault();
+    keys[key]=false;
+  };
+
+  btn.addEventListener("touchstart",start,{passive:false});
+  btn.addEventListener("touchend",end,{passive:false});
+  btn.addEventListener("touchcancel",end,{passive:false});
+
+  btn.addEventListener("mousedown",start);
+  btn.addEventListener("mouseup",end);
+  btn.addEventListener("mouseleave",end);
+});
+
+/* ---------- SPRINT ---------- */
+
+let sprint=false;
+
+document.getElementById("energyBtn").addEventListener("touchstart",e=>{
+  e.preventDefault();
+  sprint=true;
+});
+
+document.getElementById("energyBtn").addEventListener("touchend",()=>{
+  sprint=false;
+});
+
+document.getElementById("energyBtn").addEventListener("mousedown",()=>{
+  sprint=true;
+});
+
+document.getElementById("energyBtn").addEventListener("mouseup",()=>{
+  sprint=false;
+});
+
+/* ---------- UPDATE ---------- */
+
+function updatePlayer(){
+
+  let dx=0;
+  let dy=0;
+
+  if(keys.up) dy--;
+  if(keys.down) dy++;
+  if(keys.left) dx--;
+  if(keys.right) dx++;
+
+  if(dx!==0 || dy!==0){
+
+    const len=Math.hypot(dx,dy);
+    dx/=len;
+    dy/=len;
+
+    let speed=player.speed;
+
+    if(sprint && player.energy>0){
+      speed=player.sprint;
+      player.energy-=0.8;
+    }else{
+      player.energy=Math.min(100,player.energy+0.25);
+    }
+
+    player.x+=dx*speed;
+    player.y+=dy*speed;
+
+    if(Math.abs(dx)>Math.abs(dy)){
+      player.direction=dx>0?"right":"left";
+    }else{
+      player.direction=dy>0?"down":"up";
+    }
+  }else{
+    player.energy=Math.min(100,player.energy+0.4);
+  }
+
+  player.x=Math.max(40,Math.min(world.width-40,player.x));
+  player.y=Math.max(100,Math.min(world.height-40,player.y));
+}
+
+/* ---------- NPC MOVEMENT ---------- */
+
+function updatePeople(){
+
+  for(const p of people){
+
+    p.timer--;
+
+    if(p.timer<=0){
+      p.dx=random(-1,1);
+      p.dy=random(-1,1);
+      p.timer=random(50,180);
+    }
+
+    p.x+=p.dx*.35;
+    p.y+=p.dy*.35;
+
+    p.x=Math.max(50,Math.min(world.width-50,p.x));
+    p.y=Math.max(100,Math.min(world.height-50,p.y));
+  }
+}
+
+/* ---------- ENEMY ---------- */
+
+function updateEnemies(){
+
+  for(const e of enemies){
+
+    const d=distance(player,e);
+
+    if(d<350){
+
+      const dx=(player.x-e.x)/d;
+      const dy=(player.y-e.y)/d;
+
+      e.x+=dx*e.speed;
+      e.y+=dy*e.speed;
+
+      if(d<42 && e.attack<=0){
+
+        player.hp-=5;
+        e.attack=60;
+      }
+
+    }else{
+
+      e.x+=Math.sin(Date.now()/800+e.x)*.3;
+      e.y+=Math.cos(Date.now()/900+e.y)*.3;
+    }
+
+    if(e.attack>0)
+      e.attack--;
+  }
+}
+
+/* ---------- CRYSTALS ---------- */
+
+function collectCrystals(){
+
+  for(const c of crystalsList){
+
+    if(c.taken) continue;
+
+    if(distance(player,c)<38){
+
+      c.taken=true;
+      crystals++;
+      score+=50;
+
+      document.getElementById("message").textContent=
+        "💎 Crystal পেয়েছো! Portal খুঁজে বের করো";
+    }
+  }
+}
+
+/* ---------- PORTAL ---------- */
+
+function checkPortal(){
+
+  if(distance(player,portal)<70){
+
+    if(crystals>=5){
+
+      score+=500;
+
+      document.getElementById("message").textContent=
+        "🎉 Level Complete! তুমি Forest পার হয়েছো!";
+
+      setTimeout(()=>{
+        crystalsList.forEach(c=>c.taken=false);
+        crystals=0;
+        player.x=1300;
+        player.y=1300;
+        score+=1000;
+        document.getElementById("message").textContent=
+          "🌟 নতুন Level শুরু হয়েছে!";
+      },1800);
+
+    }else{
+
+      document.getElementById("message").textContent=
+        "🚪 Portal খুলতে কমপক্ষে ৫টি Crystal লাগবে";
+    }
+  }
+}
+
+/* ---------- HUD ---------- */
+
+function updateHUD(){
+
+  document.getElementById("hp").textContent=
+    Math.max(0,Math.floor(player.hp));
+
+  document.getElementById("energy").textContent=
+    Math.floor(player.energy);
+
+  document.getElementById("score").textContent=
+    score;
+}
+
+/* ---------- GAME OVER ---------- */
+
+function gameOver(){
+
+  if(player.hp<=0 && gameRunning){
+
+    gameRunning=false;
+
+    document.getElementById("gameOver").style.display="flex";
+  }
+}
+
+document.getElementById("restart").onclick=()=>{
+  location.reload();
+};
+
+/* ---------- CAMERA ---------- */
+
+function updateCamera(){
+
+  camera.x=player.x-W/2;
+  camera.y=player.y-H/2;
+
+  camera.x=Math.max(0,Math.min(world.width-W,camera.x));
+  camera.y=Math.max(0,Math.min(world.height-H,camera.y));
+}
+
+/* ---------- DRAW ---------- */
+
+function draw(){
+
+  ctx.clearRect(0,0,W,H);
+
+  drawBackground();
+
+  /* crystals */
+  for(const c of crystalsList){
+    if(!c.taken)
+      drawCrystal(c);
+  }
+
+  drawPortal();
+
+  /* NPC */
+  for(const p of people){
+
+    const x=p.x-camera.x;
+    const y=p.y-camera.y;
+
+    if(x>-70 && x<W+70 && y>-70 && y<H+70){
+      drawHuman(x,y,p.color,.9,false);
+    }
+  }
+
+  /* enemies */
+  for(const e of enemies){
+
+    const x=e.x-camera.x;
+    const y=e.y-camera.y;
+
+    if(x>-70 && x<W+70 && y>-70 && y<H+70){
+      drawHuman(x,y,"#a51e2a",1.05,true);
+    }
+  }
+
+  /* player */
+  drawHuman(
+    player.x-camera.x,
+    player.y-camera.y,
+    "#2474ff",
+    1.15,
+    false
+  );
+}
+
+/* ---------- MAIN LOOP ---------- */
+
+function loop(){
+
+  if(gameRunning){
+
+    updatePlayer();
+    updatePeople();
+    updateEnemies();
+    collectCrystals();
+    checkPortal();
+    updateCamera();
+    updateHUD();
+    gameOver();
+  }
+
+  draw();
+
+  requestAnimationFrame(loop);
+}
+
+loop();
+</script>
 
 </body>
 </html>
