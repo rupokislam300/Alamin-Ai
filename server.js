@@ -5,6 +5,20 @@ import OpenAI from "openai";
 const app = express();
 
 app.use(express.json());
+
+// Allow GitHub Pages to call this server
+app.use((req, res, next) => {
+  res.header("Access-Control-Allow-Origin", "*");
+  res.header("Access-Control-Allow-Methods", "GET,POST,OPTIONS");
+  res.header("Access-Control-Allow-Headers", "Content-Type");
+
+  if (req.method === "OPTIONS") {
+    return res.sendStatus(204);
+  }
+
+  next();
+});
+
 app.use(express.static("."));
 
 app.post("/api/chat", async (req, res) => {
@@ -15,8 +29,8 @@ app.post("/api/chat", async (req, res) => {
   }
 
   if (!process.env.OPENAI_API_KEY) {
-    return res.json({
-      answer: "Alamin AI চালু আছে। API key যোগ করলে আসল AI উত্তর চালু হবে।"
+    return res.status(500).json({
+      error: "OPENAI_API_KEY পাওয়া যাচ্ছে না।"
     });
   }
 
@@ -30,9 +44,13 @@ app.post("/api/chat", async (req, res) => {
       input: message
     });
 
-    res.json({ answer: response.output_text });
+    res.json({
+      answer: response.output_text
+    });
+
   } catch (error) {
-    console.error(error);
+    console.error("OpenAI error:", error);
+
     res.status(500).json({
       error: "AI-এর সাথে যোগাযোগ করা যাচ্ছে না।"
     });
